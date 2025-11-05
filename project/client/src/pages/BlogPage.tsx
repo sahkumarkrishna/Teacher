@@ -3,7 +3,7 @@ import { useRouter } from "../router";
 import toast from "react-hot-toast";
 import { resolveImageUrl } from "../lib/images";
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.VITE_API_URL as string;
 
 interface Blog {
   _id: string;
@@ -34,11 +34,16 @@ export default function BlogPage() {
         const res = await fetch(`${API}`);
         const data = await res.json();
 
-        if (!data.success) return toast.error("Failed to load blogs");
+        if (!data.success) {
+          toast.error("Failed to load blogs");
+          return;
+        }
 
         setBlogs(data.blogs || []);
-      } catch {
-        toast.error("Server Error");
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Server Error";
+        toast.error(message);
       } finally {
         setLoading(false);
       }
@@ -61,13 +66,15 @@ export default function BlogPage() {
         }
 
         setBlog(data.blog);
-      } catch {
-        toast.error("Error loading blog");
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Error loading blog";
+        toast.error(message);
       } finally {
         setLoading(false);
       }
     })();
-  }, [blogId]);
+  }, [blogId, navigate]);
 
   // ---------------- LIST VIEW ----------------
   if (!blogId) {
@@ -109,7 +116,7 @@ export default function BlogPage() {
                     <span>{b.author ?? "Admin"}</span>
                   </div>
 
-                  {b.tags?.length > 0 && (
+                  {Array.isArray(b.tags) && b.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
                       {b.tags.slice(0, 3).map((tag, i) => (
                         <span
@@ -160,8 +167,6 @@ export default function BlogPage() {
         className="w-full h-[350px] md:h-[500px] object-contain bg-white mt-6 rounded-2xl shadow border"
       />
 
-
-
       <p className="text-gray-800 text-lg font-medium mt-6">{blog.excerpt}</p>
 
       <div
@@ -169,16 +174,18 @@ export default function BlogPage() {
         dangerouslySetInnerHTML={{ __html: blog.content }}
       />
 
-      <div className="flex gap-2 mt-6 flex-wrap ">
-        {blog.tags?.map((tag, i) => (
-          <span
-            key={i}
-            className="bg-blue-100 text-blue-600 px-3 py-1  rounded-full text-base font-semibold"
-          >
-            #{tag}
-          </span>
-        ))}
-      </div>
+      {Array.isArray(blog.tags) && blog.tags.length > 0 && (
+        <div className="flex gap-2 mt-6 flex-wrap">
+          {blog.tags.map((tag, i) => (
+            <span
+              key={i}
+              className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-base font-semibold"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
